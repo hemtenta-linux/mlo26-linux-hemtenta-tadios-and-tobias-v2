@@ -5,3 +5,4 @@ venv
 description*
 __pycache__/
 *.py[cod]
+/deploy/
