@@ -1,0 +1,21 @@
+[Unit]
+Description=Todo FastAPI application
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+User=api
+Group=api
+WorkingDirectory=/home/api/todo-api
+
+EnvironmentFile=/etc/todo-api/api.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+
+ExecStartPre=/home/api/todo-api/venv/bin/python db_setup.py
+ExecStart=/home/api/todo-api/venv/bin/python -m uvicorn app:app --host 127.0.0.1 --port 8000
+
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
