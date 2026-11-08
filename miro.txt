@@ -1,1 +1,6 @@
-INCLUDE A LINK TO YOUR MIRO BOARD / ERD DIAGRAM HERE
+ER diagram for the todo project
+
+Repository file: docs/ERD.md
+GitHub link: https://github.com/classroom-ua/mlo26-linux-hemtenta-tadios-and-tobias/blob/Tadios/docs/ERD.md
+
+The diagram is maintained on the Tadios branch.

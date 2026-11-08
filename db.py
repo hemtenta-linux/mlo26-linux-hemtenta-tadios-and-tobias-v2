@@ -1,6 +1,7 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+
 """
 This file is responsible for making database queries, which your fastapi endpoints/routes can use.
 The reason we split them up is to avoid clutter in the endpoints, so that the endpoints might focus on other tasks 
@@ -19,30 +20,82 @@ start with a connection parameter.
 
 
 ### THIS IS JUST AN EXAMPLE OF A FUNCTION FOR INSPIRATION FOR A LIST-OPERATION (FETCHING MANY ENTRIES)
-# def get_items(con):
-#     with con:
-#         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-#             cursor.execute("SELECT * FROM items;")
-#             items = cursor.fetchall()
-#     return items
+def get_items(con):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT * FROM items;")
+            items = cursor.fetchall()
+    return items
 
+def get_todos(con):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT id, title, completed
+                FROM todos
+                ORDER BY id;
+            """)
+            todos = cursor.fetchall()
+    return todos
 
-### THIS IS JUST INSPIRATION FOR A DETAIL OPERATION (FETCHING ONE ENTRY)
-# def get_item(con, item_id):
-#     with con:
-#         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-#             cursor.execute("""SELECT * FROM items WHERE id = %s""", (item_id,))
-#             item = cursor.fetchone()
-#             return item
+def get_todo(con, todo_id):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT id, title, completed
+                FROM todos
+                WHERE id = %s;
+                """,
+                (todo_id,),
+            )
+            todo = cursor.fetchone()
 
+    return todo
 
-### THIS IS JUST INSPIRATION FOR A CREATE-OPERATION
-# def add_item(con, title, description):
-#     with con:
-#         with con.cursor(cursor_factory=RealDictCursor) as cursor:
-#             cursor.execute(
-#                 "INSERT INTO items (title, description) VALUES (%s, %s) RETURNING id;",
-#                 (title, description),
-#             )
-#             item_id = cursor.fetchone()["id"]
-#     return item_id
+def add_todo(con, title):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                INSERT INTO todos (title)
+                VALUES (%s)
+                RETURNING id, title, completed;
+                """,
+                (title,),
+            )
+            todo = cursor.fetchone()
+
+    return todo
+
+def update_todo(con, todo_id, title=None, completed=None):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                UPDATE todos
+                SET title = COALESCE(%s, title),
+                    completed = COALESCE(%s, completed)
+                WHERE id = %s
+                RETURNING id, title, completed;
+                """,
+                (title, completed, todo_id),
+            )
+            todo = cursor.fetchone()
+
+    return todo
+
+def delete_todo(con, todo_id):
+    with con:
+        with con.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                DELETE FROM todos
+                WHERE id = %s
+                RETURNING id;
+                """,
+                (todo_id,),
+            )
+            deleted_todo = cursor.fetchone()
+
+    return deleted_todo

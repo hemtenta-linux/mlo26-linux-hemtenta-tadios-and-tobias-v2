@@ -3,3 +3,5 @@ venv
 .env
 .*env*
 description*
+__pycache__/
+*.py[cod]

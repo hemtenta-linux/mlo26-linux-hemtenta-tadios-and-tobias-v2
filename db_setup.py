@@ -3,38 +3,45 @@ import os
 import psycopg2
 from dotenv import load_dotenv
 
-load_dotenv(override=True)
+load_dotenv()
 
 DATABASE_NAME = os.getenv("DATABASE_NAME")
 PASSWORD = os.getenv("PASSWORD")
+DATABASE_USER = os.getenv("DATABASE_USER", "postgres")
+DATABASE_HOST = os.getenv("DATABASE_HOST", "localhost")
+DATABASE_PORT = os.getenv("DATABASE_PORT", "5432")
 
 
 def get_connection():
-    """
-    Function that returns a single connection
-    In reality, we might use a connection pool, since
-    this way we'll start a new connection each time
-    someone hits one of our endpoints, which isn't great for performance
-    """
+    """Öppna en anslutning till databasen."""
     return psycopg2.connect(
         dbname=DATABASE_NAME,
-        user="postgres",  # change if needed
+        user=DATABASE_USER,
         password=PASSWORD,
-        host="localhost",  # change if needed
-        port="5432",  # change if needed
+        host=DATABASE_HOST,
+        port=DATABASE_PORT,
+        connect_timeout=5,
     )
 
 
 def create_tables():
-    """
-    A function to create the necessary tables for the project.
-    """
+    """Skapa tabellen todos om den saknas."""
     connection = get_connection()
-    # Implement
-    pass
+
+    try:
+        with connection:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS todos (
+                        id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                        title TEXT NOT NULL,
+                        completed BOOLEAN NOT NULL DEFAULT FALSE
+                    );
+                """)
+    finally:
+        connection.close()
 
 
 if __name__ == "__main__":
-    # Only reason to execute this file would be to create new tables, meaning it serves a migration file
     create_tables()
     print("Tables created successfully.")
