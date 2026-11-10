@@ -48,10 +48,9 @@ docker compose \
 mv "$database_file.partial" "$database_file"
 
 # Export and compress the last 24 hours of the API's systemd logs.
-journalctl -u todo-api.service --since "24 hours ago" --no-pager \
+docker compose --env-file /etc/todo-api/api.env \
+    logs --no-color --since 24h api \
     | gzip > "$logs_file.partial"
-
-mv "$logs_file.partial" "$logs_file"
 
 # Delete only our completed backup files older than seven days.
 find "$backup_dir" -maxdepth 1 -type f \
