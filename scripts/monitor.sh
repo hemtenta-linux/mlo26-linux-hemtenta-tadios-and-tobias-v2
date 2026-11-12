@@ -3,6 +3,8 @@
 set -euo pipefail
 umask 077
 
+
+# Use a predictable command search path, including when run by cron.
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # The settings file is readable only by root.
