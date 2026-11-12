@@ -1,24 +1,27 @@
-**ER-diagram för todo-projektet**
+# ER diagram for the todo project
 
-Databasen `todo_db` använder PostgreSQL. Tabellen `todos` lagrar en rad per uppgift. Diagrammet beskriver den nuvarande tabellen, kontrollerad mot både `db_setup.py` och den lokala databasen.
+The database uses PostgreSQL. The `todos` table stores one row per task. The structure below follows the table definition in `db_setup.py`.
 
-```mermaid
-erDiagram
-    todos {
-        integer id PK "GENERATED ALWAYS AS IDENTITY"
-        text title "NOT NULL"
-        boolean completed "NOT NULL, DEFAULT FALSE"
-    }
+```text
++----------------------------------+
+|              todos               |
++----------------------------------+
+| PK  id          INTEGER          |
+|     title       TEXT             |
+|     completed   BOOLEAN          |
++----------------------------------+
 ```
 
-| Kolumn | Datatyp | Regel | Betydelse |
-|---|---|---|---|
-| `id` | `INTEGER` | Primärnyckel, automatiskt genererad identitet, obligatorisk. | Identifierar uppgiften unikt. |
-| `title` | `TEXT` | `NOT NULL`. | Uppgiftens titel. |
-| `completed` | `BOOLEAN` | `NOT NULL`, standardvärde `FALSE`. | Anger om uppgiften är klar. |
+`PK` means primary key.
 
-Datamodellen består av en tabell. När en uppgift skapas genererar PostgreSQL dess id och använder `FALSE` för färdigstatus om inget annat anges.
+| Column      | Data type | Rules                                         | Description                    |
+| ----------- | --------- | --------------------------------------------- | ------------------------------ |
+| `id`        | `INTEGER` | `PRIMARY KEY`, `GENERATED ALWAYS AS IDENTITY` | Uniquely identifies the task.  |
+| `title`     | `TEXT`    | `NOT NULL`                                    | The task's title.              |
+| `completed` | `BOOLEAN` | `NOT NULL`, `DEFAULT FALSE`                   | Indicates if the task is done. |
 
-API:t har dessutom titelvalidering i `schemas.py`. Den tar bort omgivande blanksteg och avvisar tomma titlar samt NUL-tecken. Dessa regler kompletterar databasens `NOT NULL`-regel.
+The data model contains one table. When a task is created, PostgreSQL generates its id and uses `FALSE` for its completion status unless another value is provided.
 
-Tabellen definieras i [db_setup.py](../db_setup.py), och SQL-frågorna finns i [db.py](../db.py).
+The API also validates titles in `schemas.py`. It removes surrounding whitespace and rejects empty titles and NUL characters. These rules complement the database's `NOT NULL` constraint.
+
+The table is defined in [db_setup.py](../db_setup.py), and the SQL queries are in [db.py](../db.py).
