@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
+umask 077
+
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # The settings file is readable only by root.
@@ -16,7 +18,7 @@ fi
 
 source /etc/todo-api/monitor.env
 
-if [[ -z "$DISCORD_WEBHOOK_URL" ]]; then
+if [[ -z "${DISCORD_WEBHOOK_URL:-}" ]]; then
     echo "Configure DISCORD_WEBHOOK_URL first."
     exit 1
 fi
@@ -40,10 +42,20 @@ print(json.dumps({
         "$DISCORD_WEBHOOK_URL" > /dev/null
 }
 
-# Test notification delivery without performing health checks.
+# Test delivery without performing checks or changing the cooldown.
 if [[ "${1:-}" == "--test" ]]; then
     send_notification "TEST: Monitoring works on $(hostname)."
     echo "Test notification sent."
+    exit 0
+fi
+
+state_dir=/var/lib/todo-api-monitor
+install -d -m 700 "$state_dir"
+
+# Prevent two monitoring runs from sending alerts simultaneously.
+exec 9>"$state_dir/monitor.lock"
+if ! flock -n 9; then
+    echo "Another monitoring check is running."
     exit 0
 fi
 
@@ -81,11 +93,30 @@ if (( ssh_events >= SSH_THRESHOLD )); then
     message+="SSH: ${ssh_events} suspicious log entries in the last 5 minutes. "
 fi
 
-# An empty message means no checks detected a problem.
+# Use the last alert's timestamp to limit repeated notifications.
+alert_file="$state_dir/last-alert"
+cooldown=${COOLDOWN_SECONDS:-1800}
+
 if [[ -z "$message" ]]; then
     echo "Monitoring OK."
-else
-    echo "$message"
-    send_notification "ALERT on $(hostname): $message"
-    echo "Alert sent."
+
+    rm -f "$alert_file"
+    exit 0
 fi
+
+echo "$message"
+
+if [[ -f "$alert_file" ]]; then
+    last_sent=$(stat -c %Y "$alert_file")
+    now=$(date +%s)
+
+    if (( now - last_sent < cooldown )); then
+        echo "Waiting for the notification cooldown."
+        exit 0
+    fi
+fi
+
+send_notification "ALERT on $(hostname): $message"
+
+touch "$alert_file"
+echo "Alert sent."
