@@ -21,7 +21,9 @@ The database uses PostgreSQL. The `todos` table stores one row per task. The str
 | `completed` | `BOOLEAN` | `NOT NULL`, `DEFAULT FALSE`                   | Indicates if the task is done. |
 
 The data model contains one table. When a task is created, PostgreSQL generates its id and uses `FALSE` for its completion status unless another value is provided.
+The data model contains one table. When a task is created, PostgreSQL generates its id and uses `FALSE` for its completion status unless another value is provided.
 
+The API also validates titles in `schemas.py`. It removes surrounding whitespace and rejects empty titles and NUL characters. These rules complement the database's `NOT NULL` constraint.
 The API also validates titles in `schemas.py`. It removes surrounding whitespace and rejects empty titles and NUL characters. These rules complement the database's `NOT NULL` constraint.
 
 The table is defined in [db_setup.py](../db_setup.py), and the SQL queries are in [db.py](../db.py).
