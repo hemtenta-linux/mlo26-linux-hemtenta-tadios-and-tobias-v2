@@ -66,4 +66,3 @@ chmod 644 /etc/profile.d/todo-api.sh
 systemctl enable --now docker nginx cron
 
 echo "Server setup finished."
-echo "Next: clone the repository into /home/api/todo-api as the api user."

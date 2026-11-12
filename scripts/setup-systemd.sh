@@ -66,6 +66,3 @@ curl --fail --show-error --silent \
 
 echo
 echo "Systemd API demonstration ready."
-echo "Inspect with: sudo systemctl status todo-api --no-pager"
-echo "Read logs with: sudo journalctl -u todo-api -n 50 --no-pager"
-echo "Switch to the Docker API with: sudo bash scripts/install-config.sh"
