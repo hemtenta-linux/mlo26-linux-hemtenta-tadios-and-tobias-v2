@@ -2,4 +2,3 @@ SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 0 2 * * * root /usr/local/sbin/todo-api-backup >> /var/log/todo-api-backup.log 2>&1
-*/5 * * * * root /usr/local/sbin/todo-api-monitor >> /var/log/todo-api-monitor.log 2>&1

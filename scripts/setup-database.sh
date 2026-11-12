@@ -7,17 +7,17 @@ if [[ "$EUID" -ne 0 ]]; then
     exit 1
 fi
 
-# Newly created files are readable and writable only by their owner.
+
 umask 077
 
-# The repository will be cloned here during server setup.
+
 cd /home/api/todo-api
 
-# Store server credentials outside the Git repository.
+
 mkdir -p /etc/todo-api
 chmod 700 /etc/todo-api
 
-# Generate credentials only on the first run.
+
 if [[ ! -f /etc/todo-api/api.env ]]; then
     database_password=$(python3 -c 'import secrets; print(secrets.token_hex(24))')
 
@@ -36,7 +36,6 @@ fi
 
 chmod 600 /etc/todo-api/api.env
 
-# Start PostgreSQL and wait for its health check to pass.
 docker compose \
     --env-file /etc/todo-api/api.env \
     up -d --wait --wait-timeout 120 db

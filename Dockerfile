@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 
-# Avoid cache files and send logs straight to Docker.
+# Disable Python bytecode cache files and print logs immediately.
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 

@@ -40,9 +40,24 @@ fi
 chmod 755 /home/api
 
 cat > /etc/profile.d/todo-api.sh <<'EOF'
+# General shortcuts
 alias ll='ls -lah'
-alias todo-status='systemctl status todo-api --no-pager'
-alias todo-logs='sudo journalctl -u todo-api -n 50 --no-pager'
+alias todo-cd='cd /home/api/todo-api'
+
+# Docker shortcuts
+alias docker-status='sudo docker ps'
+alias docker-all='sudo docker ps -a'
+alias docker-images='sudo docker images'
+
+# Compose commands for this project
+alias todo-compose='sudo docker compose -f /home/api/todo-api/compose.yaml --env-file /etc/todo-api/api.env'
+
+alias todo-status='todo-compose ps'
+alias todo-logs='todo-compose logs --tail 50 api'
+alias todo-follow='todo-compose logs --tail 50 --follow api'
+alias todo-start='todo-compose up -d --wait'
+alias todo-stop='todo-compose stop'
+alias todo-restart='todo-compose restart api'
 EOF
 
 chmod 644 /etc/profile.d/todo-api.sh

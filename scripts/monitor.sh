@@ -1,38 +1,32 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
-umask 077
-
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
+# The settings file is readable only by root.
 if [[ "$EUID" -ne 0 ]]; then
     echo "Run this script with sudo."
     exit 1
 fi
 
-# Accept a normal run or a manual notification test.
 if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--test" ) ]]; then
     echo "Usage: todo-api-monitor [--test]"
     exit 1
 fi
 
-# Load settings from the root-owned file installed by install-config.sh.
 source /etc/todo-api/monitor.env
 
 if [[ -z "$DISCORD_WEBHOOK_URL" ]]; then
-    echo "Set DISCORD_WEBHOOK_URL in /etc/todo-api/monitor.env first."
+    echo "Configure DISCORD_WEBHOOK_URL first."
     exit 1
 fi
 
-# Convert the message to JSON and send it to Discord.
+# Encode the message safely as JSON and send it to Discord.
 send_notification() {
-    local message="$1"
     local payload
 
-    payload=$(printf '%s' "$message" | python3 -c '
-import json
-import sys
-
+    payload=$(printf '%s' "$1" | python3 -c '
+import json, sys
 print(json.dumps({
     "content": sys.stdin.read(),
     "allowed_mentions": {"parse": []}
@@ -46,86 +40,52 @@ print(json.dumps({
         "$DISCORD_WEBHOOK_URL" > /dev/null
 }
 
-# Test delivery without changing the monitoring state.
+# Test notification delivery without performing health checks.
 if [[ "${1:-}" == "--test" ]]; then
     send_notification "TEST: Monitoring works on $(hostname)."
     echo "Test notification sent."
     exit 0
 fi
 
-state_dir=/var/lib/todo-api-monitor
-mkdir -p "$state_dir"
-chmod 700 "$state_dir"
-
-# Prevent overlapping monitoring runs.
-exec 9>"$state_dir/monitor.lock"
-if ! flock -n 9; then
-    echo "Another monitoring check is running."
-    exit 0
-fi
-
-status=ok
 message=""
 
-# Read the percentage used on the root filesystem.
+# Check root filesystem usage.
 disk_usage=$(df -P / | awk 'NR == 2 {gsub(/%/, "", $5); print $5}')
 
 if (( disk_usage >= DISK_THRESHOLD )); then
-    status=problem
-    message+="Disk usage is ${disk_usage}%."
-    message+=$'\n'
+    message+="Disk usage is ${disk_usage}%. "
 fi
 
-# Require HTTP 200 from nginx's readiness endpoint.
-# A failed curl request is handled as a monitoring problem below.
+# Check API readiness. Continue even if the request fails.
 http_status=$(curl --silent \
     --connect-timeout 3 --max-time 10 \
     --output /dev/null --write-out '%{http_code}' \
     "$MONITOR_URL" || true)
 
 if [[ "$http_status" != "200" ]]; then
-    status=problem
-    message+="API readiness check failed."
-    message+=$'\n'
+    message+="API readiness check failed. "
 fi
 
-# Remember the last successfully delivered notification.
-state_file="$state_dir/last-notification"
-last_status=ok
-last_sent=0
+# Count suspicious SSH log entries from the last five minutes.
+ssh_events=$(
+    journalctl -u ssh.service \
+        --since "5 minutes ago" \
+        --no-pager -o cat |
+    awk '
+        /Failed password|Failed publickey|Invalid user/ { count++ }
+        END { print count + 0 }
+    '
+)
 
-if [[ -f "$state_file" ]]; then
-    read -r last_status last_sent < "$state_file"
+if (( ssh_events >= SSH_THRESHOLD )); then
+    message+="SSH: ${ssh_events} suspicious log entries in the last 5 minutes. "
 fi
 
-now=$(date +%s)
-
-if [[ "$status" == "ok" ]]; then
+# An empty message means no checks detected a problem.
+if [[ -z "$message" ]]; then
     echo "Monitoring OK."
-
-    # No notification is needed if everything was already healthy.
-    if [[ "$last_status" == "ok" ]]; then
-        exit 0
-    fi
-
-    message="RECOVERY: API readiness and disk usage are normal on $(hostname)."
 else
     echo "$message"
-
-    # Wait before repeating an alert for an ongoing problem.
-    if [[ "$last_status" == "problem" ]] \
-        && (( now - last_sent < COOLDOWN_SECONDS )); then
-        echo "Waiting for the notification cooldown."
-        exit 0
-    fi
-
-    message="ALERT on $(hostname):"$'\n'"$message"
+    send_notification "ALERT on $(hostname): $message"
+    echo "Alert sent."
 fi
-
-send_notification "$message"
-
-# Save state only after Discord accepts the notification.
-printf '%s %s\n' "$status" "$now" > "$state_file.tmp"
-mv "$state_file.tmp" "$state_file"
-
-echo "Notification sent."

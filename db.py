@@ -18,8 +18,6 @@ start with a connection parameter.
 - E.g, if you decide to use psycopg3, you'd be able to directly use pydantic models with the cursor, these examples are however using psycopg2 and RealDictCursor
 """
 
-
-### THIS IS JUST AN EXAMPLE OF A FUNCTION FOR INSPIRATION FOR A LIST-OPERATION (FETCHING MANY ENTRIES)
 def get_items(con):
     with con:
         with con.cursor(cursor_factory=RealDictCursor) as cursor:

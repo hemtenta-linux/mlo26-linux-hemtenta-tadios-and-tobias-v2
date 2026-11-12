@@ -72,10 +72,10 @@ Saknade uppgifter ger 404. Id:n med fel datatyp och ogiltig indata ger 422. Tite
 - `db.py` utför parametriserade SQL-frågor och returnerar resultat.
 - `db_setup.py` läser konfiguration, öppnar databasanslutningar och initierar tabellen.
 
-**Serverfiler för G-delen**
+**Serverinstallation och examination**
 
-Installationsskript finns i `scripts/` och serverkonfigurationer i `deploy/`. Följ [G-guiden](deploy/G-guide.md) för körordning, överföring, PostgreSQL, systemd, Nginx, backup, cron och Discord-notifieringar. Serverfilerna använder Ubuntu Server 24.04 LTS eller senare, en lokal PostgreSQL-server och applikationskontot `api`.
+Installationsskript finns i `scripts/` och serverkonfigurationer i `deploy/`. Följ [installationsguiden](docs/deployment.md) för körordning, systemd-demonstration, Docker, nginx, backup och monitoring. Upplägget har testats på Ubuntu 24.04 LTS med applikationskontot `api` och PostgreSQL i Docker.
 
-För över `scripts/setup-server.sh` med SCP och kör det med `sudo bash` på servern. Därefter klonas branchen `Tadios` till `/home/api/todo-api`, den virtuella miljön installeras och databas- samt konfigurationsskripten körs enligt guiden. Den färdiga koden behöver finnas i det Git-repo som servern klonar.
+För över `scripts/setup-server.sh` med SCP och kör det med `sudo bash`. Klona sedan aktuell projektbranch som `api` till `/home/api/todo-api`. Kör databasinstallationen, demonstrera API:t med `setup-systemd.sh` och byt därefter till Docker med `install-config.sh`. Backup och monitoring installeras separat med `setup-backup.sh` respektive `setup-monitoring.sh`. Den färdiga koden behöver finnas i det Git-repo som servern klonar.
 
 EC2-instans, Elastic IP, security groups, bådas SSH-åtkomst, faktisk serverinstallation, schemalagda körningar, Discord-leverans och videogenomgång verifieras på er server under förberedelserna och examinationen.
