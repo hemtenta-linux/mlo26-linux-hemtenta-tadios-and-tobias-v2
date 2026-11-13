@@ -3,11 +3,8 @@
 set -euo pipefail
 umask 077
 
-
-# Use a predictable command search path, including when run by cron.
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-# The settings file is readable only by root.
 if [[ "$EUID" -ne 0 ]]; then
     echo "Run this script with sudo."
     exit 1
@@ -25,7 +22,7 @@ if [[ -z "${DISCORD_WEBHOOK_URL:-}" ]]; then
     exit 1
 fi
 
-# Encode the message safely as JSON and send it to Discord.
+# Encode for Discord.
 send_notification() {
     local payload
 
@@ -44,7 +41,7 @@ print(json.dumps({
         "$DISCORD_WEBHOOK_URL" > /dev/null
 }
 
-# Test delivery without performing checks or changing the cooldown.
+# TEST
 if [[ "${1:-}" == "--test" ]]; then
     send_notification "TEST: Monitoring works on $(hostname)."
     echo "Test notification sent."
@@ -54,7 +51,7 @@ fi
 state_dir=/var/lib/todo-api-monitor
 install -d -m 700 "$state_dir"
 
-# Prevent two monitoring runs from sending alerts simultaneously.
+
 exec 9>"$state_dir/monitor.lock"
 if ! flock -n 9; then
     echo "Another monitoring check is running."
@@ -63,14 +60,14 @@ fi
 
 message=""
 
-# Check root filesystem usage.
+# DISK
 disk_usage=$(df -P / | awk 'NR == 2 {gsub(/%/, "", $5); print $5}')
 
 if (( disk_usage >= DISK_THRESHOLD )); then
     message+="Disk usage is ${disk_usage}%. "
 fi
 
-# Check API readiness. Continue even if the request fails.
+# API
 http_status=$(curl --silent \
     --connect-timeout 3 --max-time 10 \
     --output /dev/null --write-out '%{http_code}' \
@@ -80,7 +77,7 @@ if [[ "$http_status" != "200" ]]; then
     message+="API readiness check failed. "
 fi
 
-# Count suspicious SSH log entries from the last five minutes.
+# SSH
 ssh_events=$(
     journalctl -u ssh.service \
         --since "5 minutes ago" \
@@ -95,7 +92,7 @@ if (( ssh_events >= SSH_THRESHOLD )); then
     message+="SSH: ${ssh_events} suspicious log entries in the last 5 minutes. "
 fi
 
-# Use the last alert's timestamp to limit repeated notifications.
+# COOLDOWN
 alert_file="$state_dir/last-alert"
 cooldown=${COOLDOWN_SECONDS:-1800}
 
